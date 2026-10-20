@@ -13,10 +13,10 @@
     <AssemblyTitle>Style Search</AssemblyTitle>
     <Product>Style Search</Product>
     <RootNamespace>AintoWindows</RootNamespace>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <FileVersion>1.0.3.0</FileVersion>
-    <InformationalVersion>1.0.3</InformationalVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+    <InformationalVersion>1.0.4</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="logo.png" CopyToOutputDirectory="PreserveNewest" />

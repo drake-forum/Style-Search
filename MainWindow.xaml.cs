@@ -36,6 +36,7 @@ public partial class MainWindow : Window
     private readonly List<ClipItem> allClips = [];
     private readonly List<SnippetItem> allSnippets = [];
     private readonly Dictionary<string,ImageSource?> iconCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly BlurEffect backdropBlur=new(){KernelType=KernelType.Gaussian,RenderingBias=RenderingBias.Performance};
     private List<ApplicationEntry> applications = [];
     private bool appIndexReady;
     private CancellationTokenSource? iconLoadCancellation;
@@ -75,6 +76,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        CapturedBackdrop.Effect=backdropBlur;
         // app.Run(window) briefly shows its startup window; keep that bootstrap
         // frame invisible so users only see the launcher when they invoke it.
         Opacity=0;
@@ -94,8 +96,9 @@ public partial class MainWindow : Window
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         var handle = new WindowInteropHelper(this).Handle; source = HwndSource.FromHwnd(handle); source.AddHook(WndProc);
+        SetRoundedWindowCorners(handle);
         ApplyWindowRegion();
-        ApplyAcrylic();
+        ApplyAcrylic(IsDarkTheme());
         if (!TryRegisterLauncherShortcut(shortcutModifiers,shortcutKey)) { EmptyText.Text = "Launcher shortcut is unavailable. Change it in Settings."; EmptyText.Visibility = Visibility.Visible; }
     }
     private void InitializeTray()
@@ -141,6 +144,7 @@ public partial class MainWindow : Window
         previousForegroundWindow=GetForegroundWindow();
         searchDebounceTimer.Stop();activeMode=0; UpdateModeVisibility(); QueryBox.Clear(); RefreshResults();
         Left=(SystemParameters.WorkArea.Width-Width)/2;Top=SystemParameters.WorkArea.Top+SystemParameters.WorkArea.Height*0.25;
+        CaptureDesktopBackdrop();
         BeginAnimation(OpacityProperty,null);Opacity=1;
         BeginAnimation(HeightProperty,null);
         Height=50;
@@ -396,7 +400,8 @@ public partial class MainWindow : Window
             palette["Panel"]=$"#{alpha:X2}11151C";
         }
         foreach(var pair in palette)Resources[pair.Key]=new SolidColorBrush((Color)ColorConverter.ConvertFromString(pair.Value)!);
-        // Keep the WPF surface translucent so DWM's live system backdrop shows through.
+        // Restore the original v1 composition: a rounded, blurred snapshot behind
+        // the tint rather than DWM's rectangular system acrylic surface.
         Panel.Background=System.Windows.Media.Brushes.Transparent;
         Panel.CornerRadius=new CornerRadius(panelRadius);
         Tag=new CornerRadius(cornerRadius);
@@ -405,7 +410,7 @@ public partial class MainWindow : Window
         Panel.Effect=null;
         Panel.Opacity=1;
         UpdateLiquidGlass(isDark);
-        ApplyAcrylic();
+        ApplyAcrylic(isDark);
         ApplyWindowRegion();
         ToolTip= $"Appearance: {themeMode}";
     }
@@ -416,6 +421,12 @@ public partial class MainWindow : Window
         GlassOverlay.Opacity=acrylicEnabled?glassIntensity/100.0*0.82:0;
         GlassTint.CornerRadius=new CornerRadius(panelRadius);
         GlassInnerRim.Opacity=shadowAmount/100.0*0.35;
+        if(CapturedBackdrop.Source is not null)
+        {
+            CapturedBackdrop.Visibility=acrylicEnabled?Visibility.Visible:Visibility.Collapsed;
+            backdropBlur.Radius=4+acrylicAmount*0.22;
+            CapturedBackdrop.Effect=backdropBlur;
+        }
         var rimColor=dark?Color.FromArgb(66,244,250,255):Color.FromArgb(75,255,255,255);
         var coolRim=dark?Color.FromArgb(31,116,203,255):Color.FromArgb(48,94,139,185);
         var rimBrush=new LinearGradientBrush{StartPoint=new System.Windows.Point(0.08,0),EndPoint=new System.Windows.Point(0.92,1)};
@@ -460,31 +471,58 @@ public partial class MainWindow : Window
         glow.BeginAnimation(Canvas.LeftProperty,new DoubleAnimation(Canvas.GetLeft(glow),left,TimeSpan.FromMilliseconds(260)){EasingFunction=ease});
         glow.BeginAnimation(Canvas.TopProperty,new DoubleAnimation(Canvas.GetTop(glow),top,TimeSpan.FromMilliseconds(320)){EasingFunction=ease});
     }
-    private void ApplyAcrylic()
+    private void CaptureDesktopBackdrop()
+    {
+        if(!acrylicEnabled||CapturedBackdrop is null)return;
+        try
+        {
+            var dpi=VisualTreeHelper.GetDpi(this).DpiScaleX;
+            var x=(int)Math.Round(Left*dpi);var y=(int)Math.Round(Top*dpi);
+            var screen=System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(x,y)).Bounds;
+            x=Math.Clamp(x,screen.Left,screen.Right-1);y=Math.Clamp(y,screen.Top,screen.Bottom-1);
+            var width=Math.Min(Math.Max(1,(int)Math.Ceiling(panelWidth*dpi)),screen.Right-x);
+            var height=Math.Min(Math.Max(1,(int)Math.Ceiling(540*dpi)),screen.Bottom-y);
+            using var bitmap=new System.Drawing.Bitmap(width,height);
+            using(var graphics=System.Drawing.Graphics.FromImage(bitmap))
+                graphics.CopyFromScreen(x,y,0,0,new System.Drawing.Size(width,height),System.Drawing.CopyPixelOperation.SourceCopy);
+            var handle=bitmap.GetHbitmap();
+            try
+            {
+                CapturedBackdrop.Source=Imaging.CreateBitmapSourceFromHBitmap(handle,IntPtr.Zero,Int32Rect.Empty,BitmapSizeOptions.FromEmptyOptions());
+                if(CapturedBackdrop.Source.CanFreeze)CapturedBackdrop.Source.Freeze();
+            }
+            finally{DeleteObject(handle);}
+            CapturedBackdrop.Width=width/dpi;CapturedBackdrop.Height=height/dpi;
+            backdropBlur.Radius=4+acrylicAmount*0.22;
+            CapturedBackdrop.Effect=backdropBlur;
+            CapturedBackdrop.Visibility=Visibility.Visible;
+        }
+        catch
+        {
+            CapturedBackdrop.Source=null;CapturedBackdrop.Visibility=Visibility.Collapsed;
+        }
+    }
+    private void ApplyAcrylic(bool dark)
     {
         try
         {
             var hwnd=new WindowInteropHelper(this).Handle;
             if(hwnd==IntPtr.Zero)return;
-            // Use DWM's live system backdrop on Windows 11 22H2+. Older Windows
-            // versions fall back to the live acrylic accent policy.
-            var backdropType=acrylicEnabled?3:1; // TRANSIENTWINDOW (Desktop Acrylic) / NONE
-            var hasNativeBackdrop=OperatingSystem.IsWindowsVersionAtLeast(10,0,22621)
-                &&DwmSetWindowAttribute(hwnd,38,ref backdropType,sizeof(int))==0;
-            var useLegacyAcrylic=acrylicEnabled&&!hasNativeBackdrop;
-            if(!hasNativeBackdrop||!acrylicEnabled)
+            var policy=new AccentPolicy{AccentState=0,AccentFlags=0,GradientColor=0};
+            var size=Marshal.SizeOf<AccentPolicy>(); var memory=Marshal.AllocHGlobal(size);
+            try
             {
-                var policy=new AccentPolicy{AccentState=useLegacyAcrylic?4:0,AccentFlags=2,GradientColor=unchecked((int)0xCC11151C)};
-                var size=Marshal.SizeOf<AccentPolicy>(); var memory=Marshal.AllocHGlobal(size);
-                try
-                {
-                    Marshal.StructureToPtr(policy,memory,false);var data=new WindowCompositionAttributeData{Attribute=19,Data=memory,Size=size};
-                    SetWindowCompositionAttribute(hwnd,ref data);
-                }
-                finally{Marshal.FreeHGlobal(memory);}
+                Marshal.StructureToPtr(policy,memory,false);var data=new WindowCompositionAttributeData{Attribute=19,Data=memory,Size=size};
+                SetWindowCompositionAttribute(hwnd,ref data);
+                var noBackdrop=1;DwmSetWindowAttribute(hwnd,38,ref noBackdrop,sizeof(int));
             }
+            finally{Marshal.FreeHGlobal(memory);}
         }
         catch { /* Retain the translucent tint if desktop acrylic is unavailable. */ }
+    }
+    private static void SetRoundedWindowCorners(IntPtr hwnd)
+    {
+        try{var preference=1;DwmSetWindowAttribute(hwnd,33,ref preference,sizeof(int));var noBorder=unchecked((int)0xFFFFFFFE);DwmSetWindowAttribute(hwnd,34,ref noBorder,sizeof(int));}catch{}
     }
     private void ApplyWindowRegion()
     {
@@ -497,20 +535,10 @@ public partial class MainWindow : Window
             var radius=Math.Max(0,(int)Math.Round(panelRadius*dpi));
             var clipRect=new Rect(0,0,ActualWidth,ActualHeight);
             GlassRoot.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
+            CapturedBackdrop.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
             GlassTint.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
             GlassOverlay.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
             Panel.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
-            if(OperatingSystem.IsWindowsVersionAtLeast(10,0,22000))
-            {
-                // DWM draws the system acrylic backdrop behind the whole HWND.
-                // Let DWM round that surface too; a custom HRGN clips WPF content
-                // but can leave the compositor's backdrop looking like a square plate.
-                var preference=panelRadius==0?1:2; // DONOTROUND / ROUND
-                DwmSetWindowAttribute(hwnd,33,ref preference,sizeof(int));
-                var noBorder=unchecked((int)0xFFFFFFFE);
-                DwmSetWindowAttribute(hwnd,34,ref noBorder,sizeof(int));
-                return;
-            }
             var region=radius==0?CreateRectRgn(0,0,width,height):CreateRoundRectRgn(0,0,width+1,height+1,radius*2,radius*2);
             if(region==IntPtr.Zero)return;
             if(SetWindowRgn(hwnd,region,true)==0)DeleteObject(region);
