@@ -80,7 +80,7 @@ public partial class MainWindow : Window
         // app.Run(window) briefly shows its startup window; keep that bootstrap
         // frame invisible so users only see the launcher when they invoke it.
         Opacity=0;
-        try{LogoImage.Source=new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory,"logo.png"),UriKind.Absolute));}catch{}
+        LogoImage.Source=AppAssets.LoadLogo();
         Tag=new CornerRadius(cornerRadius);
         SizeChanged+=(_,_)=>{ApplyWindowRegion();UpdateGlassLayout();};
         Results.ItemsSource = results; ClipboardItems.ItemsSource = clips; SnippetItems.ItemsSource = snippets;
@@ -119,7 +119,7 @@ public partial class MainWindow : Window
         trayIcon.DoubleClick+=(_,_)=>Dispatcher.Invoke(ToggleLauncher);
         SetRunAtSignIn(startupEnabled);
     }
-    private System.Drawing.Icon LoadTrayIcon(){try{var path=Path.Combine(AppContext.BaseDirectory,"logo.ico");if(File.Exists(path))return new System.Drawing.Icon(path);}catch{}return System.Drawing.SystemIcons.Application;}
+    private System.Drawing.Icon LoadTrayIcon()=>AppAssets.LoadTrayIcon();
     private void SetRunAtSignIn(bool enabled)
     {
         try

@@ -19,9 +19,9 @@
 
 ## Get Style Search
 
-Download **`Style-Search-v1.0.0-win-x64.zip`** from the [GitHub Releases](https://github.com/drake-forum/Style-Search/releases) page and extract the entire ZIP. Run **`Install Style Search.bat`** to install, or run `Install-Style-Search.ps1` from PowerShell. Windows may ask you to confirm that you trust the app because the release is not code-signed.
+Download **`Style-Search-v1.0.1-win-x64.exe`** from the [GitHub Releases](https://github.com/drake-forum/Style-Search/releases) page if you want only the app executable. It is self-contained and includes the app logos, so it runs without the ZIP or a separately installed .NET runtime. Download **`Style-Search-v1.0.1-win-x64.zip`** instead for the installer, uninstall script, and shortcuts. Windows may ask you to confirm that you trust the app because the release is not code-signed.
 
-The app is published as a self-contained Windows x64 executable; the .NET runtime does not need to be installed separately. Keep the extracted release folder until installation completes. To remove the app, run **`Uninstall Style Search.bat`**. Uninstalling leaves user settings, snippets, and clipboard history in place.
+The app is published as a self-contained Windows x64 executable; the .NET runtime does not need to be installed separately. The standalone EXE is portable and can be run directly. To install shortcuts and launch-at-sign-in, extract the full ZIP and run **`Install Style Search.bat`**. To remove an installed copy, run **`Uninstall Style Search.bat`**. Uninstalling leaves user settings, snippets, and clipboard history in place.
 
 ## Shortcuts
 

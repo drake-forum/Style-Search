@@ -13,13 +13,15 @@
     <AssemblyTitle>Style Search</AssemblyTitle>
     <Product>Style Search</Product>
     <RootNamespace>AintoWindows</RootNamespace>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <InformationalVersion>1.0.1</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="logo.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="logo.ico" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="logo.png" LogicalName="StyleSearch.logo.png" />
+    <EmbeddedResource Include="logo.ico" LogicalName="StyleSearch.logo.ico" />
   </ItemGroup>
 </Project>

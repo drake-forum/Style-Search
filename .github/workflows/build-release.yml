@@ -48,20 +48,27 @@ jobs:
           $version = $tag.TrimStart('v')
           $archive = "Style-Search-$tag-win-x64.zip"
           Compress-Archive -Path (Join-Path $root '*') -DestinationPath (Join-Path $PWD $archive) -CompressionLevel Optimal
+          $standalone = "Style-Search-$tag-win-x64.exe"
+          Copy-Item (Join-Path $root 'StyleSearch-win-x64\StyleSearch.exe') -Destination (Join-Path $PWD $standalone)
           "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "STANDALONE=$standalone" | Out-File -FilePath $env:GITHUB_ENV -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: Style-Search-win-x64
-          path: ${{ env.ARCHIVE }}
+          path: |
+            ${{ env.ARCHIVE }}
+            ${{ env.STANDALONE }}
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           name: Style Search ${{ github.ref_name }}
-          body_path: RELEASE_NOTES_v1.0.0.md
-          files: ${{ env.ARCHIVE }}
+          body_path: RELEASE_NOTES_v1.0.1.md
+          files: |
+            ${{ env.ARCHIVE }}
+            ${{ env.STANDALONE }}
           generate_release_notes: true

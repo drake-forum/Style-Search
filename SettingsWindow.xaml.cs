@@ -23,7 +23,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow(MainWindow.LauncherSettings settings, string themeMode, Func<MainWindow.LauncherSettings,string,bool> preview)
     {
         InitializeComponent();
-        try{SettingsLogo.Source=new BitmapImage(new Uri(System.IO.Path.Combine(AppContext.BaseDirectory,"logo.png"),UriKind.Absolute));}catch{}
+        SettingsLogo.Source=AppAssets.LoadLogo();
         this.preview = preview;
         Settings = settings;
         ThemeMode = themeMode;
