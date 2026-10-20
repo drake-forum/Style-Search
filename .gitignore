@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+artifacts/
+work/
+StyleSearch-win-x64/
+*.user
+*.suo
+*.pdb
+*.zip
+*.sha256
+

@@ -1,0 +1,67 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish self-contained application
+        run: >-
+          dotnet publish .\StyleSearch.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o .\package\StyleSearch-win-x64
+
+      - name: Ensure external logo assets are packaged
+        shell: pwsh
+        run: Copy-Item logo.png, logo.ico -Destination .\package\StyleSearch-win-x64 -Force
+
+      - name: Assemble release ZIP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $PWD 'package'
+          Copy-Item README.md, LICENSE, NOTICE.md, RELEASE_NOTES_v1.0.0.md, 'Install-Style-Search.ps1', 'Uninstall-Style-Search.ps1', 'Install Style Search.bat', 'Uninstall Style Search.bat' -Destination $root
+          Copy-Item docs -Destination $root -Recurse
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notlike 'v*') { $tag = 'v1.0.0' }
+          $version = $tag.TrimStart('v')
+          $archive = "Style-Search-$tag-win-x64.zip"
+          Compress-Archive -Path (Join-Path $root '*') -DestinationPath (Join-Path $PWD $archive) -CompressionLevel Optimal
+          "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Style-Search-win-x64
+          path: ${{ env.ARCHIVE }}
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Style Search ${{ github.ref_name }}
+          body_path: RELEASE_NOTES_v1.0.0.md
+          files: ${{ env.ARCHIVE }}
+          generate_release_notes: true

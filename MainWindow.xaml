@@ -1,0 +1,147 @@
+<Window x:Class="AintoWindows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Style Search" Width="420" Height="58" MinHeight="58" MaxHeight="540"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="NoResize"
+        Background="Transparent" AllowsTransparency="False" ShowInTaskbar="False" Topmost="True"
+        PreviewKeyDown="Window_PreviewKeyDown" Deactivated="Window_Deactivated">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Panel" Color="#B8000000"/>
+        <SolidColorBrush x:Key="PanelBorder" Color="#3DFFFFFF"/>
+        <SolidColorBrush x:Key="Rule" Color="#30FFFFFF"/>
+        <SolidColorBrush x:Key="Ink" Color="#FFF9FAFC"/>
+        <SolidColorBrush x:Key="SecondaryInk" Color="#FFAEB3BC"/>
+        <SolidColorBrush x:Key="IconInk" Color="#FFE6E8EC"/>
+        <SolidColorBrush x:Key="Tile" Color="#14000000"/>
+        <SolidColorBrush x:Key="TileBorder" Color="#28FFFFFF"/>
+        <SolidColorBrush x:Key="TileInk" Color="#FFE0E4EB"/>
+        <SolidColorBrush x:Key="SelectedRow" Color="#D90A84FF"/>
+        <SolidColorBrush x:Key="HoverRow" Color="#20FFFFFF"/>
+        <SolidColorBrush x:Key="EmptyInk" Color="#FFAEB3BC"/>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="Row" Background="{TemplateBinding Background}" CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Tag}" Padding="16,8" Margin="4,1">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsSelected" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource SelectedRow}"/></Trigger>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource HoverRow}"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate></Setter.Value></Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Border x:Name="Panel" CornerRadius="16" Background="Transparent" Opacity="1" MouseMove="Panel_MouseMove"
+            BorderBrush="Transparent" BorderThickness="0" SnapsToDevicePixels="True"
+            RenderTransformOrigin="0.5,0.5">
+        <Grid x:Name="GlassRoot" ClipToBounds="True">
+        <Image x:Name="CapturedBackdrop" Stretch="Fill" VerticalAlignment="Top" IsHitTestVisible="False" Visibility="Collapsed"/>
+        <Border x:Name="GlassTint" CornerRadius="16" Background="{DynamicResource Panel}" IsHitTestVisible="False" ClipToBounds="True"/>
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="1"/><RowDefinition Height="*"/><RowDefinition Height="34"/></Grid.RowDefinitions>
+            <DockPanel x:Name="SearchHeader" Grid.Row="0" LastChildFill="True" Margin="20,0">
+                <Button x:Name="BackButton" Content="‹" FontSize="24" Foreground="{DynamicResource SecondaryInk}" Padding="0,0,10,3" VerticalAlignment="Center" Visibility="Collapsed" Click="Back_Click"/>
+                <Image x:Name="LogoImage" Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                <TextBlock x:Name="ModeGlyph" Text="⌕" FontFamily="Segoe UI Symbol" FontSize="23" Foreground="{DynamicResource SecondaryInk}" VerticalAlignment="Center" Margin="0,0,14,2" Visibility="Collapsed"/>
+                <Grid VerticalAlignment="Center">
+                    <TextBox x:Name="QueryBox" BorderThickness="0" FontSize="18" Foreground="{DynamicResource Ink}"
+                             Background="Transparent" VerticalContentAlignment="Center" Padding="0" CaretBrush="{DynamicResource IconInk}"
+                             TextChanged="QueryBox_TextChanged"/>
+                    <TextBlock x:Name="Watermark" Text="Search..." FontSize="18" Foreground="{DynamicResource Ink}" IsHitTestVisible="False" VerticalAlignment="Center"/>
+                </Grid>
+            </DockPanel>
+            <Border x:Name="HeaderRule" Grid.Row="1" Background="{DynamicResource Rule}" Visibility="Collapsed"/>
+            <Grid x:Name="ContentArea" Grid.Row="2" Margin="0,4" Visibility="Collapsed">
+                <ListBox x:Name="Results" MouseDoubleClick="Results_MouseDoubleClick" KeyDown="Results_KeyDown" PreviewMouseWheel="Results_PreviewMouseWheel" Visibility="Collapsed">
+                    <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="38"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Image Source="{Binding Icon}" Width="24" Height="24" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,0">
+                            <TextBlock Text="{Binding Name}" FontSize="14" Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource SecondaryInk}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid></DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <Grid x:Name="ClipboardPage" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="1"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <ListBox x:Name="ClipboardItems" SelectionChanged="ClipboardItems_SelectionChanged" MouseDoubleClick="ClipboardItems_MouseDoubleClick">
+                        <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="▤" FontSize="15" Foreground="{DynamicResource SecondaryInk}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Preview}" FontSize="13" Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding When}" FontSize="10" Foreground="{DynamicResource SecondaryInk}" Margin="0,2,0,0"/></StackPanel>
+                        </Grid></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <Border Grid.Column="1" Background="{DynamicResource Rule}" Margin="0,4"/>
+                    <Grid Grid.Column="2" Margin="16,10">
+                        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="1"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <ScrollViewer VerticalScrollBarVisibility="Hidden"><TextBlock x:Name="ClipPreviewText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource Ink}"/></ScrollViewer>
+                        <Border Grid.Row="1" Background="{DynamicResource Rule}" Margin="0,8"/>
+                        <StackPanel Grid.Row="2"><TextBlock Text="Information" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryInk}"/><TextBlock x:Name="ClipInfoText" FontSize="11" Foreground="{DynamicResource SecondaryInk}" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel>
+                    </Grid>
+                </Grid>
+                <Grid x:Name="SnippetPage" Visibility="Collapsed"><Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="1"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <ListBox x:Name="SnippetItems" SelectionChanged="SnippetItems_SelectionChanged" MouseDoubleClick="SnippetItems_MouseDoubleClick">
+                        <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="❝" FontSize="15" Foreground="{DynamicResource SecondaryInk}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" FontSize="13" Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Keyword}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource SecondaryInk}" Margin="0,2,0,0"/></StackPanel>
+                        </Grid></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <Border Grid.Column="1" Background="{DynamicResource Rule}" Margin="0,4"/>
+                    <Grid Grid.Column="2" Margin="16,10">
+                        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="1"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <ScrollViewer VerticalScrollBarVisibility="Hidden"><TextBlock x:Name="SnippetPreviewText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource Ink}"/></ScrollViewer>
+                        <Border Grid.Row="1" Background="{DynamicResource Rule}" Margin="0,8"/>
+                        <StackPanel Grid.Row="2"><TextBlock Text="Information" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryInk}"/><TextBlock x:Name="SnippetInfoText" FontSize="11" Foreground="{DynamicResource SecondaryInk}" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel>
+                    </Grid>
+                </Grid>
+                <TextBlock x:Name="EmptyText" Text="" FontSize="14" Foreground="{DynamicResource EmptyInk}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Grid>
+            <Border x:Name="FooterRule" Grid.Row="3" Background="{DynamicResource Rule}" VerticalAlignment="Top" Height="0.6" Visibility="Collapsed"/>
+            <DockPanel x:Name="FooterPanel" Grid.Row="3" Margin="20,0" LastChildFill="False" VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock x:Name="FooterStatus" FontSize="11" Foreground="{DynamicResource SecondaryInk}" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <TextBlock x:Name="FooterHints" FontSize="10" Foreground="{DynamicResource SecondaryInk}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+        <!-- WPF has no backdrop displacement filter; pair the native acrylic backdrop
+             with a soft, pointer-reactive specular rim and edge highlights. -->
+        <Canvas x:Name="GlassOverlay" IsHitTestVisible="False" ClipToBounds="True" Opacity="0">
+            <Ellipse x:Name="GlassGlowA" Width="250" Height="135">
+                <Ellipse.Fill><RadialGradientBrush>
+                    <GradientStop Color="#26BCEAFF" Offset="0"/>
+                    <GradientStop Color="#14B8DFFF" Offset="0.42"/>
+                    <GradientStop Color="#00B8DFFF" Offset="1"/>
+                </RadialGradientBrush></Ellipse.Fill>
+            </Ellipse>
+            <Ellipse x:Name="GlassGlowB" Width="230" Height="125">
+                <Ellipse.Fill><RadialGradientBrush>
+                    <GradientStop Color="#1C9D9BFF" Offset="0"/>
+                    <GradientStop Color="#0CE9A7E8" Offset="0.48"/>
+                    <GradientStop Color="#00E9A7E8" Offset="1"/>
+                </RadialGradientBrush></Ellipse.Fill>
+            </Ellipse>
+            <Border x:Name="GlassRim" BorderThickness="1" CornerRadius="16" BorderBrush="#32FFFFFF"/>
+            <Border x:Name="GlassInnerRim" Margin="1.5" BorderThickness="1" CornerRadius="15" BorderBrush="#12FFFFFF"/>
+            <Border x:Name="GlassTopSheen" Height="1.5" VerticalAlignment="Top" CornerRadius="1">
+                <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#00FFFFFF" Offset="0"/>
+                    <GradientStop Color="#30FFFFFF" Offset="0.18"/>
+                    <GradientStop Color="#10FFFFFF" Offset="0.5"/>
+                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                </LinearGradientBrush></Border.Background>
+            </Border>
+        </Canvas>
+        </Grid>
+    </Border>
+</Window>
