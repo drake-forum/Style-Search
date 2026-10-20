@@ -94,7 +94,6 @@ public partial class MainWindow : Window
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         var handle = new WindowInteropHelper(this).Handle; source = HwndSource.FromHwnd(handle); source.AddHook(WndProc);
-        SetRoundedWindowCorners(handle);
         ApplyWindowRegion();
         ApplyAcrylic();
         if (!TryRegisterLauncherShortcut(shortcutModifiers,shortcutKey)) { EmptyText.Text = "Launcher shortcut is unavailable. Change it in Settings."; EmptyText.Visibility = Visibility.Visible; }
@@ -487,10 +486,6 @@ public partial class MainWindow : Window
         }
         catch { /* Retain the translucent tint if desktop acrylic is unavailable. */ }
     }
-    private static void SetRoundedWindowCorners(IntPtr hwnd)
-    {
-        try{var preference=1;DwmSetWindowAttribute(hwnd,33,ref preference,sizeof(int));var noBorder=unchecked((int)0xFFFFFFFE);DwmSetWindowAttribute(hwnd,34,ref noBorder,sizeof(int));}catch{}
-    }
     private void ApplyWindowRegion()
     {
         try
@@ -505,6 +500,17 @@ public partial class MainWindow : Window
             GlassTint.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
             GlassOverlay.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
             Panel.Clip=new RectangleGeometry(clipRect,panelRadius,panelRadius);
+            if(OperatingSystem.IsWindowsVersionAtLeast(10,0,22000))
+            {
+                // DWM draws the system acrylic backdrop behind the whole HWND.
+                // Let DWM round that surface too; a custom HRGN clips WPF content
+                // but can leave the compositor's backdrop looking like a square plate.
+                var preference=panelRadius==0?1:2; // DONOTROUND / ROUND
+                DwmSetWindowAttribute(hwnd,33,ref preference,sizeof(int));
+                var noBorder=unchecked((int)0xFFFFFFFE);
+                DwmSetWindowAttribute(hwnd,34,ref noBorder,sizeof(int));
+                return;
+            }
             var region=radius==0?CreateRectRgn(0,0,width,height):CreateRoundRectRgn(0,0,width+1,height+1,radius*2,radius*2);
             if(region==IntPtr.Zero)return;
             if(SetWindowRgn(hwnd,region,true)==0)DeleteObject(region);
