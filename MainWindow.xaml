@@ -48,7 +48,6 @@
             BorderBrush="Transparent" BorderThickness="0" SnapsToDevicePixels="True"
             RenderTransformOrigin="0.5,0.5">
         <Grid x:Name="GlassRoot" ClipToBounds="True">
-        <Image x:Name="CapturedBackdrop" Stretch="Fill" VerticalAlignment="Top" IsHitTestVisible="False" Visibility="Collapsed"/>
         <Border x:Name="GlassTint" CornerRadius="16" Background="{DynamicResource Panel}" IsHitTestVisible="False" ClipToBounds="True"/>
         <Grid>
             <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="1"/><RowDefinition Height="*"/><RowDefinition Height="34"/></Grid.RowDefinitions>

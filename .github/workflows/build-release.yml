@@ -41,10 +41,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $root = Join-Path $PWD 'package'
-          Copy-Item README.md, LICENSE, NOTICE.md, RELEASE_NOTES_v1.0.0.md, 'Install-Style-Search.ps1', 'Uninstall-Style-Search.ps1', 'Install Style Search.bat', 'Uninstall Style Search.bat' -Destination $root
+          Copy-Item README.md, LICENSE, NOTICE.md, RELEASE_NOTES_v1.0.2.md, 'Install-Style-Search.ps1', 'Uninstall-Style-Search.ps1', 'Install Style Search.bat', 'Uninstall Style Search.bat' -Destination $root
           Copy-Item docs -Destination $root -Recurse
           $tag = '${{ github.ref_name }}'
-          if ($tag -notlike 'v*') { $tag = 'v1.0.0' }
+          if ($tag -notlike 'v*') { $tag = 'v1.0.2' }
           $version = $tag.TrimStart('v')
           $archive = "Style-Search-$tag-win-x64.zip"
           Compress-Archive -Path (Join-Path $root '*') -DestinationPath (Join-Path $PWD $archive) -CompressionLevel Optimal
@@ -67,7 +67,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Style Search ${{ github.ref_name }}
-          body_path: RELEASE_NOTES_v1.0.1.md
+          body_path: RELEASE_NOTES_v1.0.2.md
           files: |
             ${{ env.ARCHIVE }}
             ${{ env.STANDALONE }}
